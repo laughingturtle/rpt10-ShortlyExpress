@@ -114,21 +114,17 @@ app.post('/login',
     var usr = req.body.username;
     new User({username: usr, password: pass}).fetch().then(function(found) {
       if (found) {
-        res.status(200).send(found.attributes);
+        console.log('db hash: ', found);
+        this.checkPassword({password: pass}, found);
+        res.status(200).send(found.attributes); ///move to the then block below
         console.log('--------> found.attributes: ', found.attributes);
-      } else {
-        Users.create({
-          username: usr,
-          password: pass
-        })
-          .then(function(success) {
-            res.status(200).redirect('index');
-          });
       }
-    });
+    })
+      .then(function(success) {
+        res.status(200).redirect('index');
+      });
   }
 );
-
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail

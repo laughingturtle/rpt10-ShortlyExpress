@@ -10,16 +10,21 @@ var User = db.Model.extend({
     return this.belongsTo(Link, 'userId');
   },
   hashPassword: function() {
-
+    const saltRounds = bcrypt.genSaltSync(10);
+    let crypt = Promise.promisify(bcrypt.hash);
+    return crypt(model.password, saltRounds, null).then(function(hash) {
+      model.set('password', hash);
+    });
+  },
+  checkPassword: function(passwordAttempt, found) {
+    let crypt = Promise.promisify(bcrypt.compare);
+    return crypt(passwordAttempt, found, null).then(function(result) {
+      //model.set('password', result);
+      console.log(result);
+    });
   },
   initialize: function() {
-    const saltRounds = bcrypt.genSaltSync(10);
-    this.on('creating', function(model, attrs, options) {
-      let crypt = Promise.promisify(bcrypt.hash);
-      return crypt(model.password, saltRounds, null).then(function(hash) {
-        model.set('password', hash);
-      });
-    });
+    this.on('creating', this.hashPassword);
   }
 });
 
