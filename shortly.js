@@ -87,6 +87,47 @@ app.get('/signup',
   }
 );
 
+app.post('/signup',
+  function(req, res) {
+    //console.log('req: ', req.body);
+    var pass = req.body.password;
+    var usr = req.body.username;
+    new User({username: usr, password: pass}).fetch().then(function(found) {
+      if (found) {
+        res.status(200).send(found.attributes);
+      } else {
+        Users.create({
+          username: usr,
+          password: pass
+        })
+          .then(function(success) {
+            res.status(200).redirect('index');
+          });
+      }
+    });
+  }
+);
+
+app.post('/login',
+  function(req, res) {
+    var pass = req.body.password;
+    var usr = req.body.username;
+    new User({username: usr, password: pass}).fetch().then(function(found) {
+      if (found) {
+        res.status(200).send(found.attributes);
+        console.log('--------> found.attributes: ', found.attributes);
+      } else {
+        Users.create({
+          username: usr,
+          password: pass
+        })
+          .then(function(success) {
+            res.status(200).redirect('index');
+          });
+      }
+    });
+  }
+);
 
 
 /************************************************************/
