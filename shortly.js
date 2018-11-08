@@ -3,7 +3,6 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 
-
 var db = require('./app/config');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
@@ -23,60 +22,109 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/create', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/links', 
-function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
+app.get('/',
+  function(req, res) {
+    res.render('index');
   });
-});
 
-app.post('/links', 
-function(req, res) {
-  var uri = req.body.url;
+app.get('/create',
+  function(req, res) {
+    res.render('index');
+  });
 
-  if (!util.isValidUrl(uri)) {
-    console.log('Not a valid url: ', uri);
-    return res.sendStatus(404);
-  }
+app.get('/links',
+  function(req, res) {
+    Links.reset().fetch().then(function(links) {
+      res.status(200).send(links.models);
+    });
+  });
 
-  new Link({ url: uri }).fetch().then(function(found) {
-    if (found) {
-      res.status(200).send(found.attributes);
-    } else {
-      util.getUrlTitle(uri, function(err, title) {
-        if (err) {
-          console.log('Error reading URL heading: ', err);
-          return res.sendStatus(404);
-        }
+app.post('/links',
+  function(req, res) {
+    var uri = req.body.url;
 
-        Links.create({
-          url: uri,
-          title: title,
-          baseUrl: req.headers.origin
-        })
-        .then(function(newLink) {
-          res.status(200).send(newLink);
-        });
-      });
+    if (!util.isValidUrl(uri)) {
+      console.log('Not a valid url: ', uri);
+      return res.sendStatus(404);
     }
+
+    new Link({ url: uri }).fetch().then(function(found) {
+      if (found) {
+        res.status(200).send(found.attributes);
+      } else {
+        util.getUrlTitle(uri, function(err, title) {
+          if (err) {
+            console.log('Error reading URL heading: ', err);
+            return res.sendStatus(404);
+          }
+
+          Links.create({
+            url: uri,
+            title: title,
+            baseUrl: req.headers.origin
+          })
+            .then(function(newLink) {
+              res.status(200).send(newLink);
+            });
+        });
+      }
+    });
   });
-});
 
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
 
+app.get('/login',
+  function(req, res) {
+    res.render('login');
+  }
+);
 
+app.get('/signup',
+  function(req, res) {
+    res.render('signup');
+  }
+);
+
+app.post('/signup',
+  function(req, res) {
+    //console.log('req: ', req.body);
+    var pass = req.body.password;
+    var usr = req.body.username;
+    new User({username: usr, password: pass}).fetch().then(function(found) {
+      if (found) {
+        res.status(200).send(found.attributes);
+      } else {
+        Users.create({
+          username: usr,
+          password: pass
+        })
+          .then(function(success) {
+            res.status(200).redirect('index');
+          });
+      }
+    });
+  }
+);
+
+app.post('/login',
+  function(req, res) {
+    var pass = req.body.password;
+    var usr = req.body.username;
+    new User({username: usr, password: pass}).fetch().then(function(found) {
+      if (found) {
+        console.log('db hash: ', found);
+        this.checkPassword({password: pass}, found);
+        res.status(200).send(found.attributes); ///move to the then block below
+        console.log('--------> found.attributes: ', found.attributes);
+      }
+    })
+      .then(function(success) {
+        res.status(200).redirect('index');
+      });
+  }
+);
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
